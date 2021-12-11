@@ -19,6 +19,108 @@
 #include <turbojpeg.h>
 
 
+int playback(const char *input_path);
+int capture_and_show() {
+
+
+int main(int argc, char *argv[]) {
+
+    const char *input_path = argv[1];
+    playback(input_path);
+
+    return 0;
+}
+
+
+int playback(const char *input_path) {
+    k4a::playback playback = k4a::playback::open(input_path);
+    k4a::capture capture;
+
+    k4a::image color;
+
+    cv::Mat cv_rgb_image_with_alpha;
+    cv::Mat cv_rgb_image_no_alpha;
+
+    cv::namedWindow( "color", cv::WINDOW_NORMAL );
+    cv::namedWindow( "depth", cv::WINDOW_NORMAL );
+
+    playback.seek_timestamp(std::chrono::microseconds(1000), K4A_PLAYBACK_SEEK_BEGIN);
+
+    while (true) {
+
+        playback.get_next_capture(&capture);
+        color = capture.get_color_image();
+
+        // Get Color frame
+        k4a::image uncompressed_color = k4a::image::create(
+            K4A_IMAGE_FORMAT_COLOR_BGRA32, color.get_width_pixels(),
+            color.get_height_pixels(),
+            color.get_width_pixels() * 4 * (int)sizeof(uint8_t));
+
+        tjhandle tjHandle = tjInitDecompress();
+        if (tjDecompress2(tjHandle, color.get_buffer(),
+                          static_cast<unsigned long>(color.get_size()),
+                          uncompressed_color.get_buffer(),
+                          color.get_width_pixels(), 0,
+                          color.get_height_pixels(), TJPF_BGRA,
+                          TJFLAG_FASTDCT | TJFLAG_FASTUPSAMPLE) != 0) {
+            std::cout << "Failed to decompressed color frame" << std::endl;
+            exit(1);
+        }
+        if (tjDestroy(tjHandle)) {
+            std::cout << "Failed to destroy turboJPEG handle" << std::endl;
+            exit(1);
+        }
+
+        cv_rgb_image_with_alpha =
+            cv::Mat(uncompressed_color.get_height_pixels(),
+                    uncompressed_color.get_width_pixels(),
+                    CV_8UC4,
+                    (void*)uncompressed_color.get_buffer());
+
+        std::cout << uncompressed_color.get_format() << std::endl;
+        cv::cvtColor(cv_rgb_image_with_alpha, cv_rgb_image_no_alpha,
+                     cv::COLOR_BGRA2BGR);
+
+        // Depth Frame
+        k4a::image depth = capture.get_depth_image();
+        k4a::calibration k4a_calibration = playback.get_calibration();
+        k4a::transformation k4a_transformation =
+            k4a::transformation(k4a_calibration);
+        k4a::image transformed_depth_image =
+            k4a_transformation.depth_image_to_color_camera(depth);
+        cv::Mat cv_depth = cv::Mat(
+            transformed_depth_image.get_height_pixels(),
+            transformed_depth_image.get_width_pixels(), CV_16U,
+            (void*)transformed_depth_image.get_buffer(),
+            static_cast<size_t>(transformed_depth_image.get_stride_bytes()));
+        cv::Mat cv_depth_8U;
+        cv::normalize(cv_depth, cv_depth_8U, 0, (1 << 16) - 1, cv::NORM_MINMAX);
+        cv_depth_8U.convertTo(cv_depth, CV_8U, 1);
+
+        cv::imshow("color", cv_rgb_image_no_alpha);
+        cv::imshow("depth", cv_depth_8U);
+
+        // clear
+        color.reset();
+        uncompressed_color.reset();
+        capture.reset();
+
+        cv_rgb_image_with_alpha.release();
+        cv_rgb_image_no_alpha.release();
+
+        if (cv::waitKey(25) == 'q')
+            break;
+
+    }
+    capture.reset();
+    playback.close();
+
+    return 0;
+}
+
+
+
 int capture_and_show() {
 
     const uint32_t device_count = k4a::device::get_installed_count();
@@ -137,104 +239,6 @@ int capture_and_show() {
     ir_image.reset();
     capture.reset();
     device.close();
-
-    return 0;
-}
-
-
-int playback(const char *input_path) {
-    k4a::playback playback = k4a::playback::open(input_path);
-    k4a::capture capture;
-
-    k4a::image color;
-
-    cv::Mat cv_rgb_image_with_alpha;
-    cv::Mat cv_rgb_image_no_alpha;
-
-    cv::namedWindow( "color", cv::WINDOW_NORMAL );
-    cv::namedWindow( "depth", cv::WINDOW_NORMAL );
-
-    playback.seek_timestamp(std::chrono::microseconds(1000), K4A_PLAYBACK_SEEK_BEGIN);
-
-    while (true) {
-
-        playback.get_next_capture(&capture);
-        color = capture.get_color_image();
-
-        // Get Color frame
-        k4a::image uncompressed_color = k4a::image::create(
-            K4A_IMAGE_FORMAT_COLOR_BGRA32, color.get_width_pixels(),
-            color.get_height_pixels(),
-            color.get_width_pixels() * 4 * (int)sizeof(uint8_t));
-
-        tjhandle tjHandle = tjInitDecompress();
-        if (tjDecompress2(tjHandle, color.get_buffer(),
-                          static_cast<unsigned long>(color.get_size()),
-                          uncompressed_color.get_buffer(),
-                          color.get_width_pixels(), 0,
-                          color.get_height_pixels(), TJPF_BGRA,
-                          TJFLAG_FASTDCT | TJFLAG_FASTUPSAMPLE) != 0) {
-            std::cout << "Failed to decompressed color frame" << std::endl;
-            exit(1);
-        }
-        if (tjDestroy(tjHandle)) {
-            std::cout << "Failed to destroy turboJPEG handle" << std::endl;
-            exit(1);
-        }
-
-        cv_rgb_image_with_alpha =
-            cv::Mat(uncompressed_color.get_height_pixels(),
-                    uncompressed_color.get_width_pixels(),
-                    CV_8UC4,
-                    (void*)uncompressed_color.get_buffer());
-
-        std::cout << uncompressed_color.get_format() << std::endl;
-        cv::cvtColor(cv_rgb_image_with_alpha, cv_rgb_image_no_alpha,
-                     cv::COLOR_BGRA2BGR);
-
-        // Depth Frame
-        k4a::image depth = capture.get_depth_image();
-        k4a::calibration k4a_calibration = playback.get_calibration();
-        k4a::transformation k4a_transformation =
-            k4a::transformation(k4a_calibration);
-        k4a::image transformed_depth_image =
-            k4a_transformation.depth_image_to_color_camera(depth);
-        cv::Mat cv_depth = cv::Mat(
-            transformed_depth_image.get_height_pixels(),
-            transformed_depth_image.get_width_pixels(), CV_16U,
-            (void*)transformed_depth_image.get_buffer(),
-            static_cast<size_t>(transformed_depth_image.get_stride_bytes()));
-        cv::Mat cv_depth_8U;
-        cv::normalize(cv_depth, cv_depth_8U, 0, (1 << 16) - 1, cv::NORM_MINMAX);
-        cv_depth_8U.convertTo(cv_depth, CV_8U, 1);
-
-        cv::imshow("color", cv_rgb_image_no_alpha);
-        cv::imshow("depth", cv_depth_8U);
-
-        // clear
-        color.reset();
-        uncompressed_color.reset();
-        capture.reset();
-
-        cv_rgb_image_with_alpha.release();
-        cv_rgb_image_no_alpha.release();
-
-        if (cv::waitKey(25) == 'q')
-            break;
-
-    }
-    capture.reset();
-    playback.close();
-
-    return 0;
-}
-
-
-
-int main(int argc, char *argv[]) {
-    // capture_and_show();
-    const char *input_path = argv[1];
-    playback(input_path);
 
     return 0;
 }
