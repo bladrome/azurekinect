@@ -11,8 +11,8 @@
 #include <k4arecord/playback.hpp>
 #include <turbojpeg.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -328,7 +328,7 @@ class AzurePlayback
 };
 
 void
-mkvshow(std::string filename)
+mkv_show(std::string filename)
 {
     AzurePlayback apb(filename.c_str());
     cv::namedWindow("color", cv::WINDOW_NORMAL);
@@ -343,18 +343,25 @@ mkvshow(std::string filename)
         if (cv::waitKey(10) == 27)
             break;
     }
+
+    color.release();
+    cv::destroyAllWindows();
+}
+
+
+void mkv_gen_cloud(std::string filename){
+    AzurePlayback apb(filename.c_str());
+
+    k4a::image point_cloud = apb.get_point_cloud();
+    int point_count = apb.generate_point_cloud(apb.get_depth(), point_cloud);
+    apb.write_point_cloud("output.ply", point_cloud, point_count);
 }
 
 int
 main(int argc, char *argv[])
 {
     std::string filename("/home/bladrome/jack/day06/877777.mkv");
-
-    AzurePlayback apb(filename.c_str());
-
-    k4a::image point_cloud = apb.get_point_cloud();
-    int point_count = apb.generate_point_cloud(apb.get_depth(), point_cloud);
-    apb.write_point_cloud("output.ply", point_cloud, point_count);
+    mkv_show(filename);
 
     return 0;
 }
