@@ -1,6 +1,6 @@
-#include <iostream>
-#include <filesystem>
 #include <chrono>
+#include <filesystem>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -145,23 +145,41 @@ class AzurePlayback {
         playback.get_next_capture(&capture);
         return capture.is_valid();
     }
+
+    int export_all(std::string outdir = "output/") {
+        std::cout << outdir << std::endl;
+        std::string filename;
+        for (unsigned long long i = 0; next(); i += 1) {
+            cv::Mat color = get_rgb();
+            filename = outdir + "color_" + std::to_string(i) + ".jpeg";
+            cv::imwrite(filename, color);
+
+            cv::Mat depth = get_depth();
+            filename = outdir + "depth_" + std::to_string(i) + ".jpeg";
+            cv::imwrite(filename, depth);
+
+        }
+        return 0;
+    }
 };
 
 int main(int argc, char* argv[]) {
     AzurePlayback apb("/home/bladrome/jack/day06/8.mkv");
 
-    cv::namedWindow("color", cv::WINDOW_NORMAL);
+    // cv::namedWindow("color", cv::WINDOW_NORMAL);
 
-    cv::Mat color = apb.get_rgb();
-    std::cout << color.cols << " " << color.rows << std::endl;
+    // cv::Mat color = apb.get_rgb();
+    // std::cout << color.cols << " " << color.rows << std::endl;
+    std::cout << "exportall: " << apb.export_all() << std::endl;
 
-    while (apb.next()) {
-        cv::Mat color = apb.get_rgb();
-        cv::imshow("color", color);
+    /*
+        while (apb.next()) {
+            cv::Mat color = apb.get_rgb();
+            cv::imshow("color", color);
 
-        if (cv::waitKey(10) == 27)
-            break;
-    }
-
+            if (cv::waitKey(10) == 27)
+                break;
+        }
+    */
     return 0;
 }
