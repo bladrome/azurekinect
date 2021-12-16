@@ -86,12 +86,10 @@ int playback(const char* input_path) {
     cv::setMouseCallback("color", CallBackFunc, click_data);
     cv::setMouseCallback("depth", CallBackFunc, click_data);
 
-    playback.seek_timestamp(std::chrono::microseconds(4000000),
+    playback.seek_timestamp(std::chrono::microseconds(10000),
                             K4A_PLAYBACK_SEEK_BEGIN);
 
     while (true) {
-    // for (int i = 0; i < 100; i++) {
-
         if (!playback.get_next_capture(&capture)) {
             std::cout << "Get next capture failed" << std::endl;
             break;
