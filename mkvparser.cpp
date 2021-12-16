@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -16,6 +17,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <k4arecord/types.h>
 #include <turbojpeg.h>
 
 class AzurePlayback
@@ -30,6 +32,9 @@ class AzurePlayback
     k4a_record_configuration_t configuration;
 
     k4a::image xy_table;
+    k4a::image current_color;
+    k4a::image current_depth;
+    k4a::image current_ir;
 
     int width;
     int height;
@@ -70,7 +75,7 @@ class AzurePlayback
     AzurePlayback(std::string filename)
     {
         playback = k4a::playback::open(filename.c_str());
-        playback.seek_timestamp(std::chrono::microseconds(4000000),
+        playback.seek_timestamp(std::chrono::microseconds(5000000),
                                 K4A_PLAYBACK_SEEK_BEGIN);
         playback.get_next_capture(&capture);
         calibration = playback.get_calibration();
@@ -88,6 +93,10 @@ class AzurePlayback
 
     ~AzurePlayback()
     {
+        xy_table.reset();
+        current_color.reset();
+        current_depth.reset();
+        current_ir.reset();
         transformation.destroy();
         capture.reset();
         playback.close();
@@ -121,6 +130,7 @@ class AzurePlayback
         cv::Mat cv_rgb;
 
         k4a::image color = capture.get_color_image();
+        current_color = color;
 
         k4a::image uncompressed_color = k4a::image::create(
             K4A_IMAGE_FORMAT_COLOR_BGRA32, color.get_width_pixels(),
@@ -165,9 +175,7 @@ class AzurePlayback
     get_depth()
     {
         k4a::image depth = capture.get_depth_image();
-        transformation = k4a::transformation(calibration);
-        k4a::image transformed_depth_image =
-            transformation.depth_image_to_color_camera(depth);
+        current_depth = depth;
 
         return depth;
     }
@@ -175,10 +183,12 @@ class AzurePlayback
     cv::Mat
     get_cv_depth()
     {
-        k4a::image depth = capture.get_depth_image();
+        k4a::image depth = get_depth();
+
         transformation = k4a::transformation(calibration);
-        k4a::image transformed_depth_image =
-            transformation.depth_image_to_color_camera(depth);
+
+        k4a::image transformed_depth_image = transformation.depth_image_to_color_camera(depth);
+
         cv::Mat cv_depth = cv::Mat(
             transformed_depth_image.get_height_pixels(),
             transformed_depth_image.get_width_pixels(), CV_16U,
@@ -198,7 +208,7 @@ class AzurePlayback
     get_ir()
     {
         k4a::image ir_image = capture.get_ir_image();
-
+        current_ir = ir_image;
         cv::Mat cv_ir = cv::Mat(
             ir_image.get_height_pixels(), ir_image.get_width_pixels(), CV_16U,
             ir_image.get_buffer(),
@@ -252,8 +262,8 @@ class AzurePlayback
 
         uint16_t *depth_data = (uint16_t *)depth_image.get_buffer();
         k4a_float2_t *xy_table_data = (k4a_float2_t *)xy_table.get_buffer();
-        k4a_float3_t *point_cloud_data = (k4a_float3_t *)
-                                             point_cloud.get_buffer();
+        k4a_float3_t *point_cloud_data = (k4a_float3_t *)point_cloud.get_buffer();
+
 
         for (int i = 0; i < width * height; i++) {
             if (depth_data[i] != 0 && !std::isnan(xy_table_data[i].xy.x) &&
@@ -361,7 +371,8 @@ int
 main(int argc, char *argv[])
 {
     std::string filename("/home/bladrome/jack/day06/877777.mkv");
-    mkv_show(filename);
+    // mkv_show(filename);
+    mkv_gen_cloud(filename);
 
     return 0;
 }
