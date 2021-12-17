@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(depth2color
     # depth2color.cpp
     # mkvparser.cpp
-    main.cpp
+    src/main.cpp
     )
 
 
@@ -21,7 +21,6 @@ target_link_libraries(depth2color
     k4arecord
     turbojpeg
     opencv_core
-    opencv_calib3d
     opencv_imgcodecs
     opencv_imgproc
     opencv_highgui

@@ -1,8 +1,7 @@
-#include <k4a/k4atypes.h>
 #include "mkvparser.hpp"
-#include "opencv2/highgui.hpp"
 #include "utils.hpp"
 #include <cmath>
+#include <k4a/k4a.hpp>
 
 float
 k4a_distance(k4a_float3_t a, k4a_float3_t b)
@@ -32,6 +31,8 @@ cv_show(std::string filename)
         cv::Mat measure_image = color.clone();
         cv::imshow("color", color);
 
+
+
         if (cv::waitKey(30) == ' ') {
             do {
                 if (click_data->n_clicks == 2) {
@@ -41,10 +42,12 @@ cv_show(std::string filename)
                              cv::Scalar(0, 0, 0), cv::LINE_4);
                 }
                 cv::imshow("color", measure_image);
-
-                k4a_float3_t p1 = apb.get_xyz(click_data->x, click_data->y);
-                k4a_float3_t p2 = apb.get_xyz(click_data->x1, click_data->y1);
-                std::cout << "distance: " << k4a_distance(p1, p2) << std::endl;
+                float distance = apb.get_distance(click_data->x,
+                                                  click_data->y,
+                                                  click_data->x1,
+                                                  click_data->y1);
+                std::cout << "#################### distance: " << distance
+                          << std::endl;
                 click_data->n_clicks = 0;
             } while (cv::waitKey(0) != ' ');
         }
@@ -62,11 +65,15 @@ main(int argc, char *argv[])
 {
     // std::string filename("/home/bladrome/jack/day06/877777.mkv");
     std::string filename("../877777.mkv");
-    cv_show(filename);
+    // cv_show(filename);
     // mkv_gen_cloud(filename);
 
     // AzurePlayback apb(filename.c_str());
     // std::cout << "exportall: " << apb.export_all() << std::endl;
+
+    cv::Mat mat;
+    std::cout << mat.size() << std::endl;
+    std::cout << mat.empty() << std::endl;
 
     return 0;
 }

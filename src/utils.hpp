@@ -59,8 +59,6 @@ CallBackFunc(int event, int x, int y, int flags, void *userdataptr)
         data->n_clicks = 0;
         std::cout << "Left button of the mouse is clicked - position (" << x
                   << ", " << y << ")" << std::endl;
-        std::cout << "Surprisingly, current data->n_clicks is: "
-                  << data->n_clicks << std::endl;
         if (data->n_clicks == 0) {
             data->x1 = x;
             data->y1 = y;
@@ -73,8 +71,6 @@ CallBackFunc(int event, int x, int y, int flags, void *userdataptr)
         data->n_clicks++;
         std::cout << "Left button of the mouse is uped - position (" << x
                   << ", " << y << ")" << std::endl;
-        std::cout << "Surprisingly, current data->n_clicks is: "
-                  << data->n_clicks << std::endl;
     }
     // if (data->n_clicks > 0) {
     // data->x = x;

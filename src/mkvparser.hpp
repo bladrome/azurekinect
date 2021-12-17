@@ -1,5 +1,4 @@
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -69,10 +68,10 @@ class AzurePlayback
     }
 
    public:
-    AzurePlayback(std::string filename)
+    AzurePlayback(std::string filename, long long seektime = 3000000)
     {
         playback = k4a::playback::open(filename.c_str());
-        playback.seek_timestamp(std::chrono::microseconds(5000000),
+        playback.seek_timestamp(std::chrono::microseconds(seektime),
                                 K4A_PLAYBACK_SEEK_BEGIN);
         playback.get_next_capture(&capture);
         calibration = playback.get_calibration();
@@ -204,16 +203,17 @@ class AzurePlayback
     }
 
     k4a_float3_t
-    get_xyz(float coordinate_x,
-            float coordinate_y)
+    get_xyz(float coordinate_x, float coordinate_y, cv::Mat depth_image = cv::Mat(0, 0, 0))
     {
         int coordinate_x_int = static_cast<int>(coordinate_x);
         int coordinate_y_int = static_cast<int>(coordinate_y);
-        cv::Mat trans_depth_image = get_cv_depth();
-        // TODO: filter methods
-        float depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
-                                                     coordinate_y_int);
-
+        float depth;
+        if (depth_image.empty()) {
+            cv::Mat trans_depth_image = get_cv_depth();
+            // TODO: filter methods
+            depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
+                                                   coordinate_y_int);
+        }
         k4a_float3_t ray{0};
         k4a_float2_t point_2d;
 
@@ -221,7 +221,7 @@ class AzurePlayback
         point_2d.xy.y = coordinate_y;
 
         std::cout << coordinate_x_int << " " << coordinate_y_int << " "
-                  << trans_depth_image.cols << " " << trans_depth_image.rows
+                  << depth_image.cols << " " << depth_image.rows
                   << std::endl;
 
         if (calibration.convert_2d_to_3d(point_2d, depth,
@@ -238,6 +238,16 @@ class AzurePlayback
                       << std::endl;
         }
         return ray;
+    }
+
+    float
+    get_distance(int x1, int y1, int x2, int y2){
+        k4a_float3_t p1 = get_xyz(x1, y1);
+        k4a_float3_t p2 = get_xyz(x2, y2);
+
+        return std::sqrt(std::pow(p1.xyz.x - p2.xyz.x, 2) +
+                         std::pow(p1.xyz.y - p2.xyz.y, 2) +
+                         std::pow(p1.xyz.z - p2.xyz.z, 2));
     }
 
     cv::Mat
@@ -408,13 +418,13 @@ mkv_show(std::string filename)
 }
 
 void
-mkv_gen_cloud(std::string filename)
+mkv_gen_cloud(std::string filename, std::string outputfilename)
 {
     AzurePlayback apb(filename.c_str());
 
     k4a::image point_cloud = apb.get_point_cloud();
     int point_count = apb.generate_point_cloud(apb.get_depth(), point_cloud);
-    apb.write_point_cloud("output.ply", point_cloud, point_count);
+    apb.write_point_cloud(outputfilename.c_str(), point_cloud, point_count);
 }
 
 /*
