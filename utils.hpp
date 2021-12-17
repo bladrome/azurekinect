@@ -2,19 +2,22 @@
 #define UTILS_H_
 
 #include <iostream>
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 
-class Point3D {
-  private:
-  public:
+class Point3D
+{
+   private:
+   public:
     Point3D(float, float, float);
     ~Point3D();
     float x, y, z;
-    float get_distance(Point3D p);
+    float
+    get_distance(Point3D p);
 };
 
-Point3D::Point3D(float a, float b, float c) {
+Point3D::Point3D(float a, float b, float c)
+{
     x = a;
     y = b;
     z = c;
@@ -22,15 +25,18 @@ Point3D::Point3D(float a, float b, float c) {
 
 Point3D::~Point3D() {}
 
-float Point3D::get_distance(Point3D p) {
+float
+Point3D::get_distance(Point3D p)
+{
     return sqrt((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) +
                 (z - p.z) * (z - p.z));
 }
 
-class ClickData {
-  private:
+class ClickData
+{
+   private:
     /* data */
-  public:
+   public:
     ClickData(/* args */);
     ~ClickData();
     int n_clicks;
@@ -38,36 +44,48 @@ class ClickData {
     float x, y;
 };
 
-ClickData::ClickData() { this->n_clicks = 0; }
+ClickData::ClickData()
+{
+    this->n_clicks = 0;
+}
 
 ClickData::~ClickData() {}
 
-void CallBackFunc(int event, int x, int y, int flags, void* userdataptr) {
-    ClickData* data = (ClickData*)userdataptr;
+void
+CallBackFunc(int event, int x, int y, int flags, void *userdataptr)
+{
+    ClickData *data = (ClickData *)userdataptr;
     if (event == cv::EVENT_LBUTTONDOWN) {
+        data->n_clicks = 0;
         std::cout << "Left button of the mouse is clicked - position (" << x
                   << ", " << y << ")" << std::endl;
-        std::cout << "Surprisingly, current data->n_clicks is: " << data->n_clicks
-             << std::endl;
+        std::cout << "Surprisingly, current data->n_clicks is: "
+                  << data->n_clicks << std::endl;
         if (data->n_clicks == 0) {
             data->x1 = x;
             data->y1 = y;
         }
         data->n_clicks++;
     }
-    // if (event == cv::EVENT_LBUTTONUP) {
-       // data->x = x;
-       // data->y = y;
-    // }
-    if (data->n_clicks > 0) {
+    if (event == cv::EVENT_LBUTTONUP) {
         data->x = x;
         data->y = y;
+        data->n_clicks++;
+        std::cout << "Left button of the mouse is uped - position (" << x
+                  << ", " << y << ")" << std::endl;
+        std::cout << "Surprisingly, current data->n_clicks is: "
+                  << data->n_clicks << std::endl;
     }
-
+    // if (data->n_clicks > 0) {
+    // data->x = x;
+    // data->y = y;
+    // }
 }
 
-int average_window_filter(const cv::Mat trans_depth_image, int i, int j,
-                          int height, int width) {
+int
+average_window_filter(const cv::Mat trans_depth_image, int i, int j, int height,
+                      int width)
+{
     bool found = false;
     int window_size = 1;
     float depth = 0;
@@ -100,4 +118,4 @@ int average_window_filter(const cv::Mat trans_depth_image, int i, int j,
     return depth;
 }
 
-#endif // UTILS_H_
+#endif  // UTILS_H_
