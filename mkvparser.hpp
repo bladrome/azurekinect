@@ -204,11 +204,12 @@ class AzurePlayback
     }
 
     k4a_float3_t
-    get_xyz(const cv::Mat trans_depth_image, float coordinate_x,
+    get_xyz(float coordinate_x,
             float coordinate_y)
     {
         int coordinate_x_int = static_cast<int>(coordinate_x);
         int coordinate_y_int = static_cast<int>(coordinate_y);
+        cv::Mat trans_depth_image = get_cv_depth();
         // TODO: filter methods
         float depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
                                                      coordinate_y_int);
