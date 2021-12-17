@@ -17,9 +17,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <k4arecord/types.h>
-#include <turbojpeg.h>
-
 class AzurePlayback
 {
     std::string filename;
@@ -110,6 +107,7 @@ class AzurePlayback
         cv::Mat adjMap;
         cv::Mat cv_image_8U;
 
+        // TODO: color mapping
         // linear map, black
         // cv_image_16U.convertTo(cv_image_8U, CV_8U, 1 / 257.0);
 
@@ -187,7 +185,8 @@ class AzurePlayback
 
         transformation = k4a::transformation(calibration);
 
-        k4a::image transformed_depth_image = transformation.depth_image_to_color_camera(depth);
+        k4a::image transformed_depth_image =
+            transformation.depth_image_to_color_camera(depth);
 
         cv::Mat cv_depth = cv::Mat(
             transformed_depth_image.get_height_pixels(),
@@ -199,9 +198,45 @@ class AzurePlayback
     }
 
     cv::Mat
-    get_depth_8U()
+    get_cv_depth_8U()
     {
         return trans_to_8U(get_cv_depth());
+    }
+
+    k4a_float3_t
+    get_xyz(const cv::Mat trans_depth_image, float coordinate_x,
+            float coordinate_y)
+    {
+        int coordinate_x_int = static_cast<int>(coordinate_x);
+        int coordinate_y_int = static_cast<int>(coordinate_y);
+        // TODO: filter methods
+        float depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
+                                                     coordinate_y_int);
+
+        k4a_float3_t ray{0};
+        k4a_float2_t point_2d;
+
+        point_2d.xy.x = coordinate_x;
+        point_2d.xy.y = coordinate_y;
+
+        std::cout << coordinate_x_int << " " << coordinate_y_int << " "
+                  << trans_depth_image.cols << " " << trans_depth_image.rows
+                  << std::endl;
+
+        if (calibration.convert_2d_to_3d(point_2d, depth,
+                                         K4A_CALIBRATION_TYPE_COLOR,
+                                         K4A_CALIBRATION_TYPE_COLOR, &ray)) {
+            std::cout << "2dx = " << coordinate_x_int
+                      << " | 2dy = " << coordinate_y_int
+                      << " | x = " << ray.xyz.x << " | y = " << ray.xyz.y
+                      << " | z = " << ray.xyz.z << " | depth = " << depth
+                      << std::endl;
+        } else {
+            std::cout << "k4a_calibration_2d_to_3d failed for the current "
+                         "input pixel!"
+                      << std::endl;
+        }
+        return ray;
     }
 
     cv::Mat
@@ -237,20 +272,33 @@ class AzurePlayback
     }
 
     int
-    export_all(std::string outdir = "output/")
+    export_all(std::string outdir = "output2/", int rate_microseconds = 10000)
     {
         std::cout << outdir << std::endl;
         std::string filename;
-        for (unsigned long long i = 0; next(); i += 1) {
+        int count = 0;
+        unsigned long long index = 0;
+        long fresh = -1;
+        for (count = 0; next(); count += 1) {
+            // color
             cv::Mat color = get_rgb();
-            filename = outdir + "color_" + std::to_string(i) + ".jpeg";
-            cv::imwrite(filename, color);
+            index = current_color.get_device_timestamp().count();
+            if (fresh == (index / rate_microseconds)) {
+                break;
+            }
+            fresh = index / rate_microseconds;
 
+            filename = outdir + "color_" + std::to_string(index) + ".jpeg";
+            cv::imwrite(filename, color);
+            std::cout << filename << std::endl;
+
+            // depth
             cv::Mat depth = get_cv_depth();
-            filename = outdir + "depth_" + std::to_string(i) + ".jpeg";
+            index = current_depth.get_device_timestamp().count();
+            filename = outdir + "depth_" + std::to_string(index) + ".jpeg";
             cv::imwrite(filename, depth);
         }
-        return 0;
+        return count;
     }
 
     int
@@ -262,8 +310,8 @@ class AzurePlayback
 
         uint16_t *depth_data = (uint16_t *)depth_image.get_buffer();
         k4a_float2_t *xy_table_data = (k4a_float2_t *)xy_table.get_buffer();
-        k4a_float3_t *point_cloud_data = (k4a_float3_t *)point_cloud.get_buffer();
-
+        k4a_float3_t *point_cloud_data = (k4a_float3_t *)
+                                             point_cloud.get_buffer();
 
         for (int i = 0; i < width * height; i++) {
             if (depth_data[i] != 0 && !std::isnan(xy_table_data[i].xy.x) &&
@@ -358,8 +406,9 @@ mkv_show(std::string filename)
     cv::destroyAllWindows();
 }
 
-
-void mkv_gen_cloud(std::string filename){
+void
+mkv_gen_cloud(std::string filename)
+{
     AzurePlayback apb(filename.c_str());
 
     k4a::image point_cloud = apb.get_point_cloud();
@@ -367,12 +416,18 @@ void mkv_gen_cloud(std::string filename){
     apb.write_point_cloud("output.ply", point_cloud, point_count);
 }
 
+/*
 int
 main(int argc, char *argv[])
 {
-    std::string filename("/home/bladrome/jack/day06/877777.mkv");
+    // std::string filename("/home/bladrome/jack/day06/877777.mkv");
+    std::string filename("877777.mkv");
     // mkv_show(filename);
-    mkv_gen_cloud(filename);
+    // mkv_gen_cloud(filename);
+
+    AzurePlayback apb(filename.c_str());
+    std::cout << "exportall: " << apb.export_all() << std::endl;
 
     return 0;
 }
+*/
