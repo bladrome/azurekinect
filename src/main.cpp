@@ -61,7 +61,7 @@ main(int argc, char *argv[])
 
 
     // -f ../877777.mkv -s  7812711 --x1 529 --y1  75 --x2 543 --y2 535
-    cxxopts::Options options("test", "A brief description");
+    cxxopts::Options options("mkvmeasure", "Azure mkv distance measure");
 
     options.add_options()
         ("f,mkvfilename", "mkvfile name", cxxopts::value<std::string>())
@@ -89,12 +89,6 @@ main(int argc, char *argv[])
         result["y1"].as<int>(),
         result["x2"].as<int>(),
         result["y2"].as<int>()) << std::endl;
-
-    // std::string filename("../877777.mkv");
-    // AzurePlayback apb(filename.c_str(), 7812711);
-    // std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
-    // std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
-    // std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
 
 
     return 0;
