@@ -1,8 +1,7 @@
 #include "mkvparser.hpp"
-#include "opencv2/highgui.hpp"
 #include "utils.hpp"
 #include <cmath>
-#include <k4a/k4a.hpp>
+#include "cxxopts.hpp"
 
 
 void
@@ -59,14 +58,43 @@ cv_show(std::string filename)
 int
 main(int argc, char *argv[])
 {
-    // std::string filename("/home/bladrome/jack/day06/877777.mkv");
-    std::string filename("../877777.mkv");
-    // cv_show(filename);
-    // mkv_gen_cloud(filename);
-    AzurePlayback apb(filename.c_str(), 7812711);
-    std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
 
-    std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
+
+    // -f ../877777.mkv -s  7812711 --x1 529 --y1  75 --x2 543 --y2 535
+    cxxopts::Options options("test", "A brief description");
+
+    options.add_options()
+        ("f,mkvfilename", "mkvfile name", cxxopts::value<std::string>())
+        ("s,seektime", "Seek time", cxxopts::value<long long>()->default_value("0"))
+        ("x1", "x1", cxxopts::value<int>()->default_value("0"))
+        ("y1", "y1", cxxopts::value<int>()->default_value("0"))
+        ("x2", "x2", cxxopts::value<int>()->default_value("0"))
+        ("y2", "y2", cxxopts::value<int>()->default_value("0"))
+        ("h,help", "Print usage")
+    ;
+
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help"))
+    {
+      std::cout << options.help() << std::endl;
+      exit(0);
+    }
+
+    std::cout << mkv_get_distance(
+        result["mkvfilename"].as<std::string>(),
+        result["seektime"].as<long long>(),
+        result["x1"].as<int>(),
+        result["y1"].as<int>(),
+        result["x2"].as<int>(),
+        result["y2"].as<int>()) << std::endl;
+
+    // std::string filename("../877777.mkv");
+    // AzurePlayback apb(filename.c_str(), 7812711);
+    // std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
+    // std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
+    // std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
 
 
     return 0;
