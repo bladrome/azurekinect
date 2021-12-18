@@ -87,6 +87,20 @@ class AzurePlayback
         create_xy_table(calibration);
     }
 
+    AzurePlayback(k4a::calibration calibration)
+    {
+        calibration = calibration;
+        recored_length = 0;
+        xy_table = k4a::image::create(
+            K4A_IMAGE_FORMAT_CUSTOM,
+            calibration.depth_camera_calibration.resolution_width,
+            calibration.depth_camera_calibration.resolution_height,
+            calibration.depth_camera_calibration.resolution_width *
+                (int)sizeof(k4a_float2_t));
+
+        create_xy_table(calibration);
+    }
+
     ~AzurePlayback()
     {
         xy_table.reset();
@@ -210,7 +224,8 @@ class AzurePlayback
     }
 
     k4a_float3_t
-    get_xyz(float coordinate_x, float coordinate_y, cv::Mat depth_image = cv::Mat(0, 0, 0))
+    get_xyz(float coordinate_x, float coordinate_y,
+            cv::Mat depth_image = cv::Mat(0, 0, 0))
     {
         int coordinate_x_int = static_cast<int>(coordinate_x);
         int coordinate_y_int = static_cast<int>(coordinate_y);
@@ -229,8 +244,7 @@ class AzurePlayback
         point_2d.xy.y = coordinate_y;
 
         std::cout << coordinate_x_int << " " << coordinate_y_int << " "
-                  << depth_image.cols << " " << depth_image.rows
-                  << std::endl;
+                  << depth_image.cols << " " << depth_image.rows << std::endl;
 
         if (calibration.convert_2d_to_3d(point_2d, depth,
                                          K4A_CALIBRATION_TYPE_COLOR,
@@ -249,9 +263,11 @@ class AzurePlayback
     }
 
     float
-    get_distance(int x1, int y1, int x2, int y2){
-        k4a_float3_t p1 = get_xyz(x1, y1);
-        k4a_float3_t p2 = get_xyz(x2, y2);
+    get_distance(int x1, int y1, int x2, int y2,
+                 cv::Mat depth_image = cv::Mat(0, 0, 0))
+    {
+        k4a_float3_t p1 = get_xyz(x1, y1, depth_image);
+        k4a_float3_t p2 = get_xyz(x2, y2, depth_image);
 
         return std::sqrt(std::pow(p1.xyz.x - p2.xyz.x, 2) +
                          std::pow(p1.xyz.y - p2.xyz.y, 2) +
@@ -435,7 +451,35 @@ mkv_gen_cloud(std::string filename, std::string outputfilename)
     apb.write_point_cloud(outputfilename.c_str(), point_cloud, point_count);
 }
 
-float mkv_get_distance(std::string mkvfilename, long long seektime, int x1, int y1, int x2, int y2){
+float
+mkv_get_distance(std::string mkvfilename, long long seektime, int x1, int y1,
+                 int x2, int y2)
+{
     AzurePlayback apb(mkvfilename.c_str(), seektime);
     return apb.get_distance(x1, y1, x2, y2);
+}
+
+k4a::calibration
+get_calibration(std::string calibrationfilename = "calibration.json")
+{
+    std::ifstream in(calibrationfilename);
+    std::string contents((std::istreambuf_iterator<char>(in)),
+                         std::istreambuf_iterator<char>());
+
+    k4a::calibration calibration = k4a::calibration::get_from_raw(
+        (char *)contents.c_str(),
+        contents.size() + 1,  // add null to buffer
+        K4A_DEPTH_MODE_WFOV_UNBINNED, K4A_COLOR_RESOLUTION_1080P);
+
+    return calibration;
+}
+
+float
+mkv_get_distance(cv::Mat depth_image, int x1, int y1, int x2, int y2,
+                 std::string calibrationfilename = "calibration.json")
+
+{
+    k4a::calibration calibration = get_calibration(calibrationfilename);
+    AzurePlayback apb(calibration);
+    return apb.get_distance(x1, y1, x2, y2, depth_image);
 }

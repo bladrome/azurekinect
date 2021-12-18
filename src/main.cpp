@@ -1,6 +1,7 @@
 #include "mkvparser.hpp"
 #include "utils.hpp"
 #include <cmath>
+#include <k4a/k4a.hpp>
 #include "cxxopts.hpp"
 
 
@@ -56,7 +57,7 @@ cv_show(std::string filename)
 
 
 int
-main(int argc, char *argv[])
+mkvmeasure(int argc, char *argv[])
 {
 
 
@@ -90,6 +91,23 @@ main(int argc, char *argv[])
         result["x2"].as<int>(),
         result["y2"].as<int>()) << std::endl;
 
+
+    return 0;
+}
+
+
+int main(int argc, char *argv[]) {
+
+    std::ifstream in("calibration.json");
+    std::string contents((std::istreambuf_iterator<char>(in)),
+                         std::istreambuf_iterator<char>());
+
+    // std::cout << contents << std::endl;
+    k4a::calibration calibration = k4a::calibration::get_from_raw((char*)contents.c_str(),
+                                                                  contents.size() + 1, // add null to buffer
+                                                                  K4A_DEPTH_MODE_WFOV_UNBINNED,
+                                                                  K4A_COLOR_RESOLUTION_1080P);
+    std::cout << calibration.depth_mode << std::endl;
 
     return 0;
 }
