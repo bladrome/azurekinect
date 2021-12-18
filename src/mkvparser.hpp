@@ -72,7 +72,7 @@ class AzurePlayback
     {
         playback = k4a::playback::open(filename.c_str());
         playback.seek_timestamp(std::chrono::microseconds(seektime),
-                                K4A_PLAYBACK_SEEK_BEGIN);
+                                K4A_PLAYBACK_SEEK_DEVICE_TIME);
         playback.get_next_capture(&capture);
         calibration = playback.get_calibration();
         recored_length = playback.get_recording_length();
@@ -96,6 +96,13 @@ class AzurePlayback
         transformation.destroy();
         capture.reset();
         playback.close();
+    }
+
+    void
+    seek_device_timestamp(long long seektime = 3000000)
+    {
+        playback.seek_timestamp(std::chrono::microseconds(seektime),
+                                K4A_PLAYBACK_SEEK_DEVICE_TIME);
     }
 
     cv::Mat
@@ -208,8 +215,9 @@ class AzurePlayback
         int coordinate_x_int = static_cast<int>(coordinate_x);
         int coordinate_y_int = static_cast<int>(coordinate_y);
         float depth;
+        cv::Mat trans_depth_image;
         if (depth_image.empty()) {
-            cv::Mat trans_depth_image = get_cv_depth();
+            trans_depth_image = get_cv_depth();
             // TODO: filter methods
             depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
                                                    coordinate_y_int);
@@ -283,7 +291,7 @@ class AzurePlayback
     }
 
     int
-    export_all(std::string outdir = "output2/", int rate_microseconds = 10000)
+    export_all(std::string outdir = "output/", int rate_microseconds = 20000)
     {
         std::cout << outdir << std::endl;
         std::string filename;
@@ -427,18 +435,7 @@ mkv_gen_cloud(std::string filename, std::string outputfilename)
     apb.write_point_cloud(outputfilename.c_str(), point_cloud, point_count);
 }
 
-/*
-int
-main(int argc, char *argv[])
-{
-    // std::string filename("/home/bladrome/jack/day06/877777.mkv");
-    std::string filename("877777.mkv");
-    // mkv_show(filename);
-    // mkv_gen_cloud(filename);
-
-    AzurePlayback apb(filename.c_str());
-    std::cout << "exportall: " << apb.export_all() << std::endl;
-
-    return 0;
+float mkv_get_distance(std::string mkvfilename, long long seektime, int x1, int y1, int x2, int y2){
+    AzurePlayback apb(mkvfilename.c_str(), seektime);
+    return apb.get_distance(x1, y1, x2, y2);
 }
-*/

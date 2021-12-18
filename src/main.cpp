@@ -1,15 +1,9 @@
 #include "mkvparser.hpp"
+#include "opencv2/highgui.hpp"
 #include "utils.hpp"
 #include <cmath>
 #include <k4a/k4a.hpp>
 
-float
-k4a_distance(k4a_float3_t a, k4a_float3_t b)
-{
-    return std::sqrt(std::pow(a.xyz.x - b.xyz.x, 2) +
-                     std::pow(a.xyz.y - b.xyz.y, 2) +
-                     std::pow(a.xyz.z - b.xyz.z, 2));
-}
 
 void
 cv_show(std::string filename)
@@ -60,6 +54,8 @@ cv_show(std::string filename)
     cv::destroyAllWindows();
 }
 
+
+
 int
 main(int argc, char *argv[])
 {
@@ -67,13 +63,11 @@ main(int argc, char *argv[])
     std::string filename("../877777.mkv");
     // cv_show(filename);
     // mkv_gen_cloud(filename);
+    AzurePlayback apb(filename.c_str(), 7812711);
+    std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
 
-    // AzurePlayback apb(filename.c_str());
-    // std::cout << "exportall: " << apb.export_all() << std::endl;
+    std::cout << mkv_get_distance(filename, 7812711, 529, 75, 543, 535) << std::endl;
 
-    cv::Mat mat;
-    std::cout << mat.size() << std::endl;
-    std::cout << mat.empty() << std::endl;
 
     return 0;
 }
