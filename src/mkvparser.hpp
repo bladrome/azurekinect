@@ -16,6 +16,29 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+cv::Mat
+trans_to_8U(cv::Mat cv_image_16U)
+{
+    double min;
+    double max;
+    cv::Mat adjMap;
+    cv::Mat cv_image_8U;
+
+    // TODO: color mapping
+    // linear map, black
+    // cv_image_16U.convertTo(cv_image_8U, CV_8U, 1 / 257.0);
+
+    // normalize, black
+    // cv::normalize(cv_image_16U, cv_image_8U, 255, 0, cv::NORM_MINMAX);
+
+    cv::minMaxIdx(cv_image_16U, &min, &max);
+    float scale = 255 / (max - min);
+    cv_image_16U.convertTo(adjMap, CV_8UC1, scale, -min * scale);
+    cv::applyColorMap(adjMap, cv_image_8U, cv::COLORMAP_HSV);
+
+    return cv_image_8U;
+}
+
 class AzurePlayback
 {
     std::string filename;
@@ -90,7 +113,7 @@ class AzurePlayback
     AzurePlayback(k4a::calibration calibration)
     {
         calibration = calibration;
-        recored_length = 0;
+        recored_length = std::chrono::microseconds(0);
         xy_table = k4a::image::create(
             K4A_IMAGE_FORMAT_CUSTOM,
             calibration.depth_camera_calibration.resolution_width,
@@ -117,29 +140,6 @@ class AzurePlayback
     {
         playback.seek_timestamp(std::chrono::microseconds(seektime),
                                 K4A_PLAYBACK_SEEK_DEVICE_TIME);
-    }
-
-    cv::Mat
-    trans_to_8U(cv::Mat cv_image_16U)
-    {
-        double min;
-        double max;
-        cv::Mat adjMap;
-        cv::Mat cv_image_8U;
-
-        // TODO: color mapping
-        // linear map, black
-        // cv_image_16U.convertTo(cv_image_8U, CV_8U, 1 / 257.0);
-
-        // normalize, black
-        // cv::normalize(cv_image_16U, cv_image_8U, 255, 0, cv::NORM_MINMAX);
-
-        cv::minMaxIdx(cv_image_16U, &min, &max);
-        float scale = 255 / (max - min);
-        cv_image_16U.convertTo(adjMap, CV_8UC1, scale, -min * scale);
-        cv::applyColorMap(adjMap, cv_image_8U, cv::COLORMAP_HSV);
-
-        return cv_image_8U;
     }
 
     cv::Mat
@@ -474,6 +474,8 @@ get_calibration(std::string calibrationfilename = "calibration.json")
     return calibration;
 }
 
+
+// TODO
 float
 mkv_get_distance(cv::Mat depth_image, int x1, int y1, int x2, int y2,
                  std::string calibrationfilename = "calibration.json")

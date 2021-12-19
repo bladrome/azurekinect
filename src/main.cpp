@@ -1,4 +1,5 @@
 #include "mkvparser.hpp"
+#include "opencv2/highgui.hpp"
 #include "utils.hpp"
 #include <cmath>
 #include <k4a/k4a.hpp>
@@ -59,8 +60,6 @@ cv_show(std::string filename)
 int
 mkvmeasure(int argc, char *argv[])
 {
-
-
     // -f ../877777.mkv -s  7812711 --x1 529 --y1  75 --x2 543 --y2 535
     cxxopts::Options options("mkvmeasure", "Azure mkv distance measure");
 
@@ -98,16 +97,8 @@ mkvmeasure(int argc, char *argv[])
 
 int main(int argc, char *argv[]) {
 
-    std::ifstream in("calibration.json");
-    std::string contents((std::istreambuf_iterator<char>(in)),
-                         std::istreambuf_iterator<char>());
-
-    // std::cout << contents << std::endl;
-    k4a::calibration calibration = k4a::calibration::get_from_raw((char*)contents.c_str(),
-                                                                  contents.size() + 1, // add null to buffer
-                                                                  K4A_DEPTH_MODE_WFOV_UNBINNED,
-                                                                  K4A_COLOR_RESOLUTION_1080P);
-    std::cout << calibration.depth_mode << std::endl;
+    AzurePlayback apb("../877777.mkv", 7812711);
+    std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
 
     return 0;
 }
