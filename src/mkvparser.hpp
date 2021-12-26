@@ -92,6 +92,7 @@ class AzurePlayback
 
    public:
     AzurePlayback(std::string filename, long long seektime = 3000000)
+        :filename(filename)
     {
         playback = k4a::playback::open(filename.c_str());
         playback.seek_timestamp(std::chrono::microseconds(seektime),
@@ -409,7 +410,7 @@ class AzurePlayback
     }
 
     k4a::image
-    get_point_cloud()
+    get_point_cloud_template()
     {
         return k4a::image::create(
             K4A_IMAGE_FORMAT_CUSTOM,
@@ -417,6 +418,21 @@ class AzurePlayback
             calibration.depth_camera_calibration.resolution_height,
             calibration.depth_camera_calibration.resolution_width *
                 (int)sizeof(k4a_float3_t));
+    }
+
+    int
+    export_point_cloud(std::string outprefix = "./") {
+        k4a::image point_cloud = get_point_cloud_template();
+
+        for (int count = 0; next(); count += 1) {
+            int point_count = generate_point_cloud(get_depth(), point_cloud);
+
+            std::string outfilename =  outprefix + filename + "_point_cloud_" + std::to_string(current_depth.get_device_timestamp().count()) + ".ply";
+            std::cout << outfilename << std::endl;
+
+            write_point_cloud(outfilename.c_str(), point_cloud, point_count);
+        }
+        return 0;
     }
 };
 
@@ -446,7 +462,7 @@ mkv_gen_cloud(std::string filename, std::string outputfilename)
 {
     AzurePlayback apb(filename.c_str());
 
-    k4a::image point_cloud = apb.get_point_cloud();
+    k4a::image point_cloud = apb.get_point_cloud_template();
     int point_count = apb.generate_point_cloud(apb.get_depth(), point_cloud);
     apb.write_point_cloud(outputfilename.c_str(), point_cloud, point_count);
 }
