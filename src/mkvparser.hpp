@@ -349,7 +349,6 @@ class AzurePlayback
                                              point_cloud.get_buffer();
 
         for (int i = 0; i < width * height; i++) {
-
             if (depth_data[i] != 0 && !std::isnan(xy_table_data[i].xy.x) &&
                 !std::isnan(xy_table_data[i].xy.y)) {
                 float x = xy_table_data[i].xy.x * (float)depth_data[i];
@@ -438,8 +437,7 @@ class AzurePlayback
             std::string outfilename =
                 outprefix + filename + "_point_cloud_" +
                 std::to_string(current_depth.get_device_timestamp().count()) +
-                "_" + std::to_string(count) +
-                ".ply";
+                "_" + std::to_string(count) + ".ply";
             std::cout << outfilename << std::endl;
             std::cout << configuration.start_timestamp_offset_usec << std::endl;
 
