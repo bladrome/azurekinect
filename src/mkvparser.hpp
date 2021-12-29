@@ -503,7 +503,6 @@ get_calibration(std::string calibrationfilename = "calibration.json")
     return calibration;
 }
 
-
 // TODO
 float
 mkv_get_distance(cv::Mat depth_image, int x1, int y1, int x2, int y2,
