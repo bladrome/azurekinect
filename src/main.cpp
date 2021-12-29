@@ -19,14 +19,11 @@ cv_show(std::string filename)
     std::cout << color.cols << " " << color.rows << std::endl;
     // std::cout << "exportall: " << apb.export_all() << std::endl;
 
-    while (true) {
-        apb.next();
+    while (apb.next()) {
         cv::Mat color = apb.get_rgb();
 
         cv::Mat measure_image = color.clone();
         cv::imshow("color", color);
-
-
 
         if (cv::waitKey(30) == ' ') {
             do {
@@ -97,8 +94,9 @@ mkvmeasure(int argc, char *argv[])
 
 int main(int argc, char *argv[]) {
 
-    AzurePlayback apb("91.mkv", 0);
+    // AzurePlayback apb("91.mkv", 0);
     // std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
-    apb.export_point_cloud();
+    // apb.export_point_cloud();
+    cv_show("91.mkv");
     return 0;
 }
