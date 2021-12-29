@@ -303,8 +303,7 @@ class AzurePlayback
     bool
     next()
     {
-        playback.get_next_capture(&capture);
-        return capture.is_valid();
+        return playback.get_next_capture(&capture);
     }
 
     int
