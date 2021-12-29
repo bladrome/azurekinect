@@ -1,3 +1,8 @@
+#ifndef __MKVPARSER
+#define __MKVPARSER
+
+const int _debug_ = 0;
+
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -143,6 +148,16 @@ class AzurePlayback
                                 K4A_PLAYBACK_SEEK_DEVICE_TIME);
     }
 
+    int
+    seek_capture_frames(long long index)
+    {
+        seek_device_timestamp(0);
+        for (; index > 0; index--)
+            next();
+
+        return 0;
+    }
+
     cv::Mat
     get_rgb()
     {
@@ -242,8 +257,11 @@ class AzurePlayback
 
             int y_lower = std::max(j - step, 0);
             int y_upper = std::min(j + step, width);
-            std::cout << "(" << x_lower << "," << x_upper << ")"
-                      << "(" << y_lower << "," << y_upper << ")" << std::endl;
+            if (_debug_) {
+                std::cout << "(" << x_lower << "," << x_upper << ")"
+                          << "(" << y_lower << "," << y_upper << ")"
+                          << std::endl;
+            }
 
             float value = 0;
             int number = 0;
@@ -287,17 +305,21 @@ class AzurePlayback
         point_2d.xy.x = coordinate_x;
         point_2d.xy.y = coordinate_y;
 
-        std::cout << coordinate_x_int << " " << coordinate_y_int << " "
-                  << depth_image.cols << " " << depth_image.rows << std::endl;
-
+        if (_debug_) {
+            std::cout << coordinate_x_int << " " << coordinate_y_int << " "
+                      << depth_image.cols << " " << depth_image.rows
+                      << std::endl;
+        }
         if (calibration.convert_2d_to_3d(point_2d, depth,
                                          K4A_CALIBRATION_TYPE_COLOR,
                                          K4A_CALIBRATION_TYPE_COLOR, &ray)) {
-            std::cout << "2dx = " << coordinate_x_int
-                      << " | 2dy = " << coordinate_y_int
-                      << " | x = " << ray.xyz.x << " | y = " << ray.xyz.y
-                      << " | z = " << ray.xyz.z << " | depth = " << depth
-                      << std::endl;
+            if (_debug_) {
+                std::cout << "2dx = " << coordinate_x_int
+                          << " | 2dy = " << coordinate_y_int
+                          << " | x = " << ray.xyz.x << " | y = " << ray.xyz.y
+                          << " | z = " << ray.xyz.z << " | depth = " << depth
+                          << std::endl;
+            }
         } else {
             std::cout << "k4a_calibration_2d_to_3d failed for the current "
                          "input pixel!"
@@ -525,7 +547,13 @@ float
 mkv_get_distance(std::string mkvfilename, long long seektime, int x1, int y1,
                  int x2, int y2)
 {
-    AzurePlayback apb(mkvfilename.c_str(), seektime);
+    AzurePlayback apb(mkvfilename.c_str());
+    if (seektime > 100000) {
+        apb.seek_device_timestamp(seektime);
+    } else {
+        apb.seek_capture_frames(seektime);
+    }
+
     return apb.get_distance(x1, y1, x2, y2);
 }
 
@@ -554,3 +582,5 @@ mkv_get_distance(cv::Mat depth_image, int x1, int y1, int x2, int y2,
     AzurePlayback apb(calibration);
     return apb.get_distance(x1, y1, x2, y2, depth_image);
 }
+
+#endif
