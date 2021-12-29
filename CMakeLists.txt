@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 
-project(depth2color)
+project(mkv2dist)
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -16,7 +16,7 @@ add_executable(depth2color
 find_library(OpenCV /usr/lib/cmake/opencv4)
 include_directories(/usr/include/opencv4)
 
-target_link_libraries(depth2color
+target_link_libraries(mkv2dist
     k4a
     k4arecord
     turbojpeg

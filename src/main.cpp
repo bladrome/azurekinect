@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
     // AzurePlayback apb("91.mkv", 0);
     // std::cout << apb.get_distance(529, 75, 543, 535) << std::endl;
     // apb.export_point_cloud();
-    cv_show("91.mkv");
+    // cv_show("91.mkv");
+    mkvmeasure(argc, argv);
     return 0;
 }
