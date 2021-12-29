@@ -92,7 +92,7 @@ class AzurePlayback
 
    public:
     AzurePlayback(std::string filename, long long seektime = 3000000)
-        :filename(filename)
+        : filename(filename)
     {
         playback = k4a::playback::open(filename.c_str());
         playback.seek_timestamp(std::chrono::microseconds(seektime),
@@ -224,6 +224,47 @@ class AzurePlayback
         return trans_to_8U(get_cv_depth());
     }
 
+    float
+    average_window_filter(const cv::Mat depth_image, int i, int j,
+                          float distance_limit = 1700)
+    {
+        bool found = false;
+        int window_size = 1;
+        float depth = 0;
+        height = depth_image.rows;
+        width = depth_image.cols;
+        while (found == false) {
+            window_size *= 2;
+            int step = window_size / 2;
+
+            int x_lower = std::max(i - step, 0);
+            int x_upper = std::min(i + step, height);
+
+            int y_lower = std::max(j - step, 0);
+            int y_upper = std::min(j + step, width);
+            std::cout << "(" << x_lower << "," << x_upper << ")"
+                      << "(" << y_lower << "," << y_upper << ")" << std::endl;
+
+            float value = 0;
+            int number = 0;
+
+            for (int x = x_lower; x < x_upper; x++) {
+                for (int y = y_lower; y < y_upper; y++) {
+                    if (0 < depth_image.at<cv::uint16_t>(x, y) &&
+                        depth_image.at<cv::uint16_t>(x, y) < distance_limit) {
+                        found = true;
+                        value += depth_image.at<cv::uint16_t>(x, y);
+                        number += 1;
+                    }
+                }
+            }
+            if (found == true) {
+                depth = value / number;
+            }
+        }
+        return depth;
+    }
+
     k4a_float3_t
     get_xyz(float coordinate_x, float coordinate_y,
             cv::Mat depth_image = cv::Mat(0, 0, 0))
@@ -235,8 +276,10 @@ class AzurePlayback
         if (depth_image.empty()) {
             trans_depth_image = get_cv_depth();
             // TODO: filter methods
-            depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
-                                                   coordinate_y_int);
+            // depth = trans_depth_image.at<uint16_t>(coordinate_x_int,
+            //                                        coordinate_y_int);
+            depth = average_window_filter(trans_depth_image, coordinate_x_int,
+                                          coordinate_y_int);
         }
         k4a_float3_t ray{0};
         k4a_float2_t point_2d;
