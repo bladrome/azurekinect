@@ -349,17 +349,20 @@ class AzurePlayback
                                              point_cloud.get_buffer();
 
         for (int i = 0; i < width * height; i++) {
-            // remove background
-            if ( depth_data[i] > 1600 ) {
-                continue;
-            }
+
             if (depth_data[i] != 0 && !std::isnan(xy_table_data[i].xy.x) &&
                 !std::isnan(xy_table_data[i].xy.y)) {
-                point_cloud_data[i].xyz.x = xy_table_data[i].xy.x *
-                                            (float)depth_data[i];
-                point_cloud_data[i].xyz.y = xy_table_data[i].xy.y *
-                                            (float)depth_data[i];
-                point_cloud_data[i].xyz.z = (float)depth_data[i];
+                float x = xy_table_data[i].xy.x * (float)depth_data[i];
+                float y = xy_table_data[i].xy.y * (float)depth_data[i];
+                float z = (float)depth_data[i];
+                // remove background
+                if (z > 1600 || y < -534) {
+                    continue;
+                }
+
+                point_cloud_data[i].xyz.x = x;
+                point_cloud_data[i].xyz.y = y;
+                point_cloud_data[i].xyz.z = z;
 
                 point_count++;
             } else {
