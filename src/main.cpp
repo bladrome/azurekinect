@@ -16,7 +16,7 @@ cv_show(std::string filename)
     cv::setMouseCallback("color", CallBackFunc, click_data);
 
     cv::Mat color = apb.get_rgb();
-    std::cout << color.cols << " " << color.rows << std::endl;
+    // std::cout << color.cols << " " << color.rows << std::endl;
     // std::cout << "exportall: " << apb.export_all() << std::endl;
 
     while (apb.next()) {
@@ -63,17 +63,17 @@ mkvmeasure(int argc, char *argv[])
     options.add_options()
         ("f,mkvfilename", "mkvfile name", cxxopts::value<std::string>())
         ("s,seektime", "Seek time", cxxopts::value<long long>()->default_value("0"))
-        ("x1", "x1", cxxopts::value<int>()->default_value("0"))
-        ("y1", "y1", cxxopts::value<int>()->default_value("0"))
-        ("x2", "x2", cxxopts::value<int>()->default_value("0"))
-        ("y2", "y2", cxxopts::value<int>()->default_value("0"))
+        ("x1", "x1", cxxopts::value<std::string>()->default_value("0"))
+        ("y1", "y1", cxxopts::value<std::string>()->default_value("0"))
+        ("x2", "x2", cxxopts::value<std::string>()->default_value("0"))
+        ("y2", "y2", cxxopts::value<std::string>()->default_value("0"))
         ("h,help", "Print usage")
     ;
 
 
     auto result = options.parse(argc, argv);
 
-    if (result.count("help"))
+    if (argc < 2 || result.count("help"))
     {
       std::cout << options.help() << std::endl;
       exit(0);
@@ -82,10 +82,11 @@ mkvmeasure(int argc, char *argv[])
     std::cout << mkv_get_distance(
         result["mkvfilename"].as<std::string>(),
         result["seektime"].as<long long>(),
-        result["x1"].as<int>(),
-        result["y1"].as<int>(),
-        result["x2"].as<int>(),
-        result["y2"].as<int>()) << std::endl;
+        std::stoi(result["x1"].as<std::string>()),
+        std::stoi(result["y1"].as<std::string>()),
+        std::stoi(result["x2"].as<std::string>()),
+        std::stoi(result["y2"].as<std::string>()))
+              << std::endl;
 
 
     return 0;
