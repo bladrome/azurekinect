@@ -491,6 +491,7 @@ class AzurePlayback
                 (int)sizeof(k4a_float3_t));
     }
 
+    // TODO: Fix Path
     int
     export_point_cloud(std::string outprefix = "./")
     {
@@ -499,14 +500,13 @@ class AzurePlayback
         for (int count = 0; next(); count += 1) {
             int point_count = generate_point_cloud(get_depth(), point_cloud);
 
-            std::string outfilename =
-                outprefix + filename + "_point_cloud_" +
+            std::string outfilename = filename + "_raw_point_cloud_" +
                 std::to_string(current_depth.get_device_timestamp().count()) +
                 "_" + std::to_string(count) + ".ply";
             std::cout << outfilename << std::endl;
             std::cout << configuration.start_timestamp_offset_usec << std::endl;
 
-            // write_point_cloud(outfilename.c_str(), point_cloud, point_count);
+            write_point_cloud(outfilename.c_str(), point_cloud, point_count);
         }
         return 0;
     }
