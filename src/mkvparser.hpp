@@ -1,7 +1,6 @@
 #ifndef __MKVPARSER
 #define __MKVPARSER
 
-#include "opencv2/core/hal/interface.h"
 const int _debug_ = 0;
 
 #include <chrono>
@@ -297,7 +296,8 @@ class AzurePlayback
         int width = point_cloud.get_width_pixels();
         int height = point_cloud.get_height_pixels();
 
-        k4a_float3_t *point_cloud_data = (k4a_float3_t *)point_cloud.get_buffer();
+        k4a_float3_t *point_cloud_data = (k4a_float3_t *)
+                                             point_cloud.get_buffer();
 
         std::vector<cv::Vec4d> raw_points(point_count);
         // std::cout << " " << point_count << std::endl;
@@ -308,35 +308,35 @@ class AzurePlayback
                 continue;
             }
 
-
-            raw_points.push_back(
-                cv::Vec4d{
-                (float)point_cloud_data[i].xyz.x,
-                (float)point_cloud_data[i].xyz.y,
-                (float)point_cloud_data[i].xyz.z,
-                1});
+            raw_points.push_back(cv::Vec4d{(float)point_cloud_data[i].xyz.x,
+                                           (float)point_cloud_data[i].xyz.y,
+                                           (float)point_cloud_data[i].xyz.z,
+                                           1});
         }
 
         struct {
-            bool operator()(cv::Vec4d a, cv::Vec4d b) const { return a.val[1] > b.val[1]; }
+            bool
+            operator()(cv::Vec4d a, cv::Vec4d b) const
+            {
+                return a.val[1] > b.val[1];
+            }
         } Vec4dGreater;
         std::sort(raw_points.begin(), raw_points.end(), Vec4dGreater);
         if (_debug_) {
-            for (auto i = 0; i < 10 ;++i)
+            for (auto i = 0; i < 10; ++i)
                 std::cout << raw_points[i] << std::endl;
         }
-        int groundsystemnumber = 100;
+        int groundsystemnumber = 50;
         cv::Mat GroundA(groundsystemnumber, 4, CV_64FC1);
-        for (auto i = 0; i < groundsystemnumber; ++i){
+        for (auto i = 0; i < groundsystemnumber; ++i) {
             for (auto j = 0; j < 4; ++j)
-            GroundA.at<double>(i, j) = raw_points[i].val[j];
+                GroundA.at<double>(i, j) = raw_points[i].val[j];
         }
         cv::Vec4d x;
         cv::SVD::solveZ(GroundA, x);
         std::cout << x << std::endl;
 
         return x;
-
     }
 
     k4a_float3_t
@@ -389,11 +389,16 @@ class AzurePlayback
                  cv::Mat depth_image = cv::Mat(0, 0, 0))
     {
         k4a_float3_t p1 = get_xyz(x1, y1, depth_image);
-        k4a_float3_t p2 = get_xyz(x2, y2, depth_image);
+        if (x2 > 0 && y2 > 0) {
+            k4a_float3_t p2 = get_xyz(x2, y2, depth_image);
+            return std::sqrt(std::pow(p1.xyz.x - p2.xyz.x, 2) +
+                             std::pow(p1.xyz.y - p2.xyz.y, 2) +
+                             std::pow(p1.xyz.z - p2.xyz.z, 2));
+        }
+        cv::Vec4d ground = get_ground();
 
-        return std::sqrt(std::pow(p1.xyz.x - p2.xyz.x, 2) +
-                         std::pow(p1.xyz.y - p2.xyz.y, 2) +
-                         std::pow(p1.xyz.z - p2.xyz.z, 2));
+        return (p1.xyz.x * ground.val[0] + p1.xyz.y * ground.val[1] +
+                p1.xyz.y * ground.val[2] + ground.val[3]);
     }
 
     cv::Mat
@@ -556,7 +561,8 @@ class AzurePlayback
         for (int count = 0; next(); count += 1) {
             int point_count = generate_point_cloud(get_depth(), point_cloud);
 
-            std::string outfilename = filename + "_raw_point_cloud_" +
+            std::string outfilename =
+                filename + "_raw_point_cloud_" +
                 std::to_string(current_depth.get_device_timestamp().count()) +
                 "_" + std::to_string(count) + ".ply";
             std::cout << outfilename << std::endl;
