@@ -49,3 +49,21 @@ target_link_libraries(genpointclouds
     opencv_imgproc
     opencv_highgui
     )
+
+
+add_executable(getground
+# add_library(mkv2dist
+    # depth2color.cpp
+    # mkvparser.cpp
+    src/getground.cpp
+    )
+
+target_link_libraries(getground
+    k4a
+    k4arecord
+    turbojpeg
+    opencv_core
+    opencv_imgcodecs
+    opencv_imgproc
+    opencv_highgui
+    )

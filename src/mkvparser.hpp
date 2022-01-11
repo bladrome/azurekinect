@@ -1,6 +1,7 @@
 #ifndef __MKVPARSER
 #define __MKVPARSER
 
+#include "opencv2/core/hal/interface.h"
 const int _debug_ = 0;
 
 #include <chrono>
@@ -283,6 +284,61 @@ class AzurePlayback
         return depth;
     }
 
+    cv::Vec4d
+    get_ground()
+    {
+        if (!current_depth.is_valid()) {
+            get_depth();
+        }
+        k4a::image point_cloud = get_point_cloud_template();
+
+        int point_count = generate_point_cloud(current_depth, point_cloud);
+
+        int width = point_cloud.get_width_pixels();
+        int height = point_cloud.get_height_pixels();
+
+        k4a_float3_t *point_cloud_data = (k4a_float3_t *)point_cloud.get_buffer();
+
+        std::vector<cv::Vec4d> raw_points(point_count);
+        // std::cout << " " << point_count << std::endl;
+        for (int i = 0; i < width * height; i++) {
+            if (std::isnan(point_cloud_data[i].xyz.x) ||
+                std::isnan(point_cloud_data[i].xyz.y) ||
+                std::isnan(point_cloud_data[i].xyz.z)) {
+                continue;
+            }
+
+
+            raw_points.push_back(
+                cv::Vec4d{
+                (float)point_cloud_data[i].xyz.x,
+                (float)point_cloud_data[i].xyz.y,
+                (float)point_cloud_data[i].xyz.z,
+                1});
+        }
+
+        struct {
+            bool operator()(cv::Vec4d a, cv::Vec4d b) const { return a.val[1] > b.val[1]; }
+        } Vec4dGreater;
+        std::sort(raw_points.begin(), raw_points.end(), Vec4dGreater);
+        if (_debug_) {
+            for (auto i = 0; i < 10 ;++i)
+                std::cout << raw_points[i] << std::endl;
+        }
+        int groundsystemnumber = 100;
+        cv::Mat GroundA(groundsystemnumber, 4, CV_64FC1);
+        for (auto i = 0; i < groundsystemnumber; ++i){
+            for (auto j = 0; j < 4; ++j)
+            GroundA.at<double>(i, j) = raw_points[i].val[j];
+        }
+        cv::Vec4d x;
+        cv::SVD::solveZ(GroundA, x);
+        std::cout << x << std::endl;
+
+        return x;
+
+    }
+
     k4a_float3_t
     get_xyz(float coordinate_x, float coordinate_y,
             cv::Mat depth_image = cv::Mat(0, 0, 0))
@@ -547,7 +603,7 @@ float
 mkv_get_distance(std::string mkvfilename, long long seektime, int x1, int y1,
                  int x2, int y2)
 {
-    AzurePlayback apb(mkvfilename.c_str());
+    AzurePlayback apb(mkvfilename);
     if (seektime > 100000) {
         apb.seek_device_timestamp(seektime);
     } else {
