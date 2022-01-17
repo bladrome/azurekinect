@@ -453,10 +453,17 @@ class AzurePlayback
         int n_zero = 5;
         long unsigned int count = 0;
         for (count = 0; next(); count += rate) {
-            // color
-            cv::Mat color = get_rgb();
-            std::string strcount = std::to_string(count);
 
+            cv::Mat color;
+            try {
+                color = get_rgb();
+            }
+            catch (const k4a::error & e) {
+                // std::cerr << e.what();
+                continue;
+            }
+
+            std::string strcount = std::to_string(count);
             auto index = std::string(n_zero - strcount.length(), '0') + strcount;
             auto filename = outdir + basename + "_color_" + index + ".jpeg";
             cv::imwrite(filename, color);
