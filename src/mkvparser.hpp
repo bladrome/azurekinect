@@ -20,6 +20,8 @@ const int _debug_ = 0;
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <filesystem>
+
 
 cv::Mat
 trans_to_8U(cv::Mat cv_image_16U)
@@ -433,30 +435,37 @@ class AzurePlayback
     }
 
     int
-    export_all(std::string outdir = "output/", int rate_microseconds = 20000)
+    export_all(std::string outdir = "output/", int rate = 1)
     {
-        std::cout << outdir << std::endl;
-        std::string filename;
-        int count = 0;
-        unsigned long long index = 0;
-        long fresh = -1;
-        for (count = 0; next(); count += 1) {
+
+        std::size_t botDirPos = filename.find_last_of("/");
+        std::string dirname = filename.substr(0, botDirPos);
+        std::string basename = filename.substr(botDirPos, filename.length());
+        basename = basename.substr(0, basename.find_last_of("."));
+
+        outdir = dirname + basename;
+        if (! std::filesystem::exists(outdir)){
+            std::filesystem::create_directory(outdir);
+        }
+        std::cout << basename << std::endl;
+        std::cout << dirname << std::endl;
+
+        int n_zero = 5;
+        long unsigned int count = 0;
+        for (count = 0; next(); count += rate) {
             // color
             cv::Mat color = get_rgb();
-            index = current_color.get_device_timestamp().count();
-            if (fresh == (index / rate_microseconds)) {
-                break;
-            }
-            fresh = index / rate_microseconds;
+            std::string strcount = std::to_string(count);
 
-            filename = outdir + "color_" + std::to_string(index) + ".jpeg";
+            auto index = std::string(n_zero - strcount.length(), '0') + strcount;
+            auto filename = outdir + basename + "_color_" + index + ".jpeg";
             cv::imwrite(filename, color);
             std::cout << filename << std::endl;
 
             // depth
             cv::Mat depth = get_cv_depth();
-            index = current_depth.get_device_timestamp().count();
-            filename = outdir + "depth_" + std::to_string(index) + ".jpeg";
+            filename = outdir + basename + "_depth_" + index + ".jpeg";
+            std::cout << filename << std::endl;
             cv::imwrite(filename, depth);
         }
         return count;
