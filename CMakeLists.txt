@@ -9,6 +9,25 @@ set(CMAKE_CXX_STANDARD 17)
 find_library(OpenCV /usr/lib/cmake/opencv4)
 include_directories(/usr/include/opencv4)
 
+add_executable(exportall
+# add_library(mkv2dist
+    # SHARED
+    # depth2color.cpp
+    # mkvparser.cpp
+    src/exportall.cpp
+    )
+
+target_link_libraries(exportall
+    k4a
+    k4arecord
+    turbojpeg
+    opencv_core
+    opencv_imgcodecs
+    opencv_imgproc
+    opencv_highgui
+    )
+
+
 
 
 add_executable(mkv2dist
@@ -28,8 +47,6 @@ target_link_libraries(mkv2dist
     opencv_imgproc
     opencv_highgui
     )
-
-
 
 
 
