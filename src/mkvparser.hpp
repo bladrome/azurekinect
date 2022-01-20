@@ -451,8 +451,8 @@ class AzurePlayback
         std::cout << dirname << std::endl;
 
         int n_zero = 5;
-        long unsigned int count = 0;
-        for (count = 0; next(); count += rate) {
+        long unsigned int count;
+        for (count = 1; next(); count += rate) {
 
             cv::Mat color;
             try {
@@ -465,13 +465,13 @@ class AzurePlayback
 
             std::string strcount = std::to_string(count);
             auto index = std::string(n_zero - strcount.length(), '0') + strcount;
-            auto filename = outdir + basename + "_color_" + index + ".jpeg";
+            auto filename = outdir + basename + "_color_" + index + ".jpg";
             cv::imwrite(filename, color);
             std::cout << filename << std::endl;
 
             // depth
             cv::Mat depth = get_cv_depth();
-            filename = outdir + basename + "_depth_" + index + ".jpeg";
+            filename = outdir + basename + "_depth_" + index + ".jpg";
             std::cout << filename << std::endl;
             cv::imwrite(filename, depth);
         }
