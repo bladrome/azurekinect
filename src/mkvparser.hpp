@@ -48,6 +48,7 @@ trans_to_8U(cv::Mat cv_image_16U)
 
 class AzurePlayback
 {
+public:
     std::string filename;
     std::string serial_num;
 
@@ -471,9 +472,9 @@ class AzurePlayback
 
             // depth
             cv::Mat depth = get_cv_depth();
-            filename = outdir + basename + "_depth_" + index + ".jpg";
-            std::cout << filename << std::endl;
+            filename = outdir + basename + "_depth_" + index + ".tif";
             cv::imwrite(filename, depth);
+            std::cout << filename << std::endl;
         }
         return count;
     }

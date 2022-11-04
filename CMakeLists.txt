@@ -84,3 +84,23 @@ target_link_libraries(getground
     opencv_imgproc
     opencv_highgui
     )
+
+
+add_executable(calibration_test
+# add_library(mkv2dist
+    # depth2color.cpp
+    # mkvparser.cpp
+    src/calibration_test.cpp
+
+    )
+
+target_link_libraries(calibration_test
+    k4a
+    k4arecord
+    turbojpeg
+    opencv_core
+    opencv_imgcodecs
+    opencv_imgproc
+    opencv_highgui
+    opencv_calib3d
+    )
